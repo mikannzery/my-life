@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>積み重ね</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;700&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f5f2;
+    --surface: #ffffff;
+    --border: #e8e4de;
+    --text: #2a2520;
+    --text-muted: #9e9890;
+    --accent: #5b7fa6;
+    --accent-light: #dce8f5;
+    --done: #7ab8a0;
+    --done-light: #e0f2ec;
+    --future: #ede9e3;
+    --danger: #c97070;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 48px 24px 80px;
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  header {
+    margin-bottom: 48px;
+  }
+  header h1 {
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .title-input {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    border-bottom: 2px solid transparent;
+    padding-bottom: 4px;
+    transition: border-color 0.2s;
+  }
+  .title-input:focus {
+    border-bottom-color: var(--accent);
+  }
+  .title-input::placeholder { color: var(--border); }
+
+  /* Progress Bar Section */
+  .bar-section {
+    margin-bottom: 40px;
+  }
+
+  .bar-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .bar-label {
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+  }
+  .bar-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .bar-count span {
+    font-size: 22px;
+    font-weight: 300;
+    color: var(--text);
+  }
+
+  .bar-wrap {
+    position: relative;
+    height: 56px;
+    background: var(--future);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .bar-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, var(--done) 0%, #8fcab5 100%);
+    border-radius: 6px 0 0 6px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 0;
+  }
+
+  .bar-fill::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .bar-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .bar-label-now {
+    font-size: 11px;
+    color: var(--done);
+    letter-spacing: 0.1em;
+    font-weight: 700;
+  }
+  .bar-label-future {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
+
+  .percent-badge {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 400;
+    color: white;
+    left: 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .bar-fill.has-progress .percent-badge {
+    opacity: 1;
+  }
+
+  /* Task Section */
+  .tasks-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .tasks-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .tasks-header h2 {
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.05em;
+  }
+  .btn-add:hover { background: #4a6d94; }
+  .btn-add:active { transform: scale(0.97); }
+
+  .task-list {
+    list-style: none;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    animation: slideIn 0.25s ease;
+  }
+  .task-item:last-child { border-bottom: none; }
+  .task-item:hover { background: #faf9f7; }
+  .task-item.done { background: var(--done-light); }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .task-check {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    appearance: none;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s;
+    background: white;
+  }
+  .task-check:checked {
+    background: var(--done);
+    border-color: var(--done);
+  }
+  .task-check:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px; top: 0px;
+    width: 5px; height: 10px;
+    border: 2px solid white;
+    border-top: none; border-left: none;
+    transform: rotate(45deg);
+  }
+  .task-check:hover { border-color: var(--done); }
+
+  .task-name {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--text);
+    cursor: pointer;
+    transition: color 0.15s;
+    outline: none;
+    border: none;
+    background: transparent;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    padding: 2px 4px;
+    border-radius: 3px;
+    min-width: 0;
+  }
+  .task-name:focus {
+    background: var(--accent-light);
+    outline: none;
+  }
+  .task-item.done .task-name {
+    color: var(--text-muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--done);
+  }
+
+  .btn-delete {
+    background: none;
+    border: none;
+    color: var(--border);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    opacity: 0;
+    flex-shrink: 0;
+  }
+  .task-item:hover .btn-delete { opacity: 1; }
+  .btn-delete:hover { color: var(--danger); background: #fdeaea; }
+
+  /* Empty state */
+  .empty-state {
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 2;
+  }
+  .empty-state .icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    opacity: 0.4;
+  }
+
+  /* Footer stats */
+  .footer-stats {
+    margin-top: 24px;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .stat {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .stat strong {
+    font-family: 'DM Mono', monospace;
+    font-weight: 400;
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  .footer-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-ghost {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+  .btn-ghost:hover { background: var(--surface); color: var(--text); border-color: #ccc; }
+  .btn-ghost:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-ghost.danger:hover { color: var(--danger); border-color: var(--danger); background: #fdeaea; }
+
+  /* Confirm Modal */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(42, 37, 32, 0.25);
+    backdrop-filter: blur(2px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.visible {
+    display: flex;
+    animation: fadeIn 0.15s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 32px;
+    max-width: 340px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    animation: popIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes popIn {
+    from { transform: scale(0.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .modal-icon { font-size: 28px; margin-bottom: 12px; }
+  .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .modal p { font-size: 13px; font-weight: 300; color: var(--text-muted); line-height: 1.7; margin-bottom: 22px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  .btn-modal-cancel {
+    padding: 8px 18px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-modal-cancel:hover { background: var(--border); color: var(--text); }
+
+  .btn-modal-confirm {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-modal-confirm.red { background: var(--danger); color: white; }
+  .btn-modal-confirm.red:hover { background: #b55e5e; }
+  .btn-modal-confirm.amber { background: #d4954a; color: white; }
+  .btn-modal-confirm.amber:hover { background: #b87d3c; }
+
+  /* Sync badge */
+  .sync-badge {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 400;
+    transition: all 0.3s;
+  }
+  .sync-loading { background: #f0ede8; color: var(--text-muted); }
+  .sync-ok { background: var(--done-light); color: var(--done); }
+  .sync-saving { background: #fef3e2; color: #d4954a; }
+  .sync-error { background: #fdeaea; color: var(--danger); }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <h1>学習トラッカー</h1>
+      <span id="syncStatus" class="sync-badge">接続中...</span>
+    </div>
+    <input class="title-input" id="skillTitle" type="text" placeholder="スキル名を入力..." maxlength="40">
+  </header>
+
+  <div class="bar-section">
+    <div class="bar-meta">
+      <span class="bar-label">今までの積み重ね</span>
+      <div class="bar-count"><span id="doneCount">0</span> / <span id="totalCount">0</span> タスク</div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-fill" id="barFill">
+        <span class="percent-badge" id="percentBadge">0%</span>
+      </div>
+    </div>
+    <div class="bar-labels">
+      <span class="bar-label-now">これまで ↑</span>
+      <span class="bar-label-future">未来 →</span>
+    </div>
+  </div>
+
+  <div class="tasks-section">
+    <div class="tasks-header">
+      <h2>タスクリスト</h2>
+      <button class="btn-add" id="btnAdd">＋ タスクを追加</button>
+    </div>
+    <ul class="task-list" id="taskList"></ul>
+  </div>
+
+  <div class="footer-stats">
+    <div class="stat">完了: <strong id="statDone">0</strong></div>
+    <div class="stat">残り: <strong id="statLeft">0</strong></div>
+    <div class="stat">達成率: <strong id="statPct">—</strong></div>
+    <div class="footer-actions">
+      <button class="btn-ghost" id="btnUndo" disabled>↩ 一つ戻す</button>
+      <button class="btn-ghost danger" id="btnReset">↺ リセット</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-icon" id="modalIcon"></div>
+    <h3 id="modalTitle"></h3>
+    <p id="modalDesc"></p>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" id="modalCancel">キャンセル</button>
+      <button class="btn-modal-confirm" id="modalConfirm"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+// ── Firebase Setup ──────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyD8jQfFhKWLcnroxJgeL84TMG5U_kFhWFc",
+  authDomain: "my-life-6678a.firebaseapp.com",
+  projectId: "my-life-6678a",
+  storageBucket: "my-life-6678a.firebasestorage.app",
+  messagingSenderId: "401637129718",
+  appId: "1:401637129718:web:6ecc4790c8b84d904d5bd7"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const docRef = db.collection('tracker').doc('main');
+
+// ── State ──────────────────────────────────────────
+let state = { title: '', tasks: [] };
+let undoStack = [];
+let modalCallback = null;
+let saveTimer = null;
+let unsubscribe = null;
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+// ── Sync Status ─────────────────────────────────────
+function setSyncStatus(type, text) {
+  const el = document.getElementById('syncStatus');
+  el.className = 'sync-badge sync-' + type;
+  el.textContent = text;
+}
+
+// ── Firestore Save (debounced) ───────────────────────
+function save() {
+  setSyncStatus('saving', '同期中...');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    docRef.set({ title: state.title, tasks: state.tasks })
+      .then(() => setSyncStatus('ok', '同期済み ✓'))
+      .catch(e => { console.error(e); setSyncStatus('error', '同期エラー'); });
+  }, 600);
+}
+
+// ── Firestore Realtime Listener ──────────────────────
+function startSync() {
+  setSyncStatus('loading', '接続中...');
+  unsubscribe = docRef.onSnapshot(snap => {
+    if (snap.exists) {
+      const data = snap.data();
+      state.title = data.title || '';
+      state.tasks = data.tasks || [];
+    } else {
+      state = { title: '', tasks: [] };
+    }
+    document.getElementById('skillTitle').value = state.title;
+    renderTasks();
+    updateBar();
+    setSyncStatus('ok', '同期済み ✓');
+  }, err => {
+    console.error(err);
+    setSyncStatus('error', '接続エラー');
+  });
+}
+
+// ── Modal ──────────────────────────────────────────
+function showModal({ icon, title, desc, confirmLabel, confirmClass, onConfirm }) {
+  document.getElementById('modalIcon').textContent = icon;
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalDesc').textContent = desc;
+  const btn = document.getElementById('modalConfirm');
+  btn.textContent = confirmLabel;
+  btn.className = 'btn-modal-confirm ' + confirmClass;
+  modalCallback = onConfirm;
+  document.getElementById('modalBackdrop').classList.add('visible');
+}
+
+function hideModal() {
+  document.getElementById('modalBackdrop').classList.remove('visible');
+  modalCallback = null;
+}
+
+document.getElementById('modalCancel').addEventListener('click', hideModal);
+document.getElementById('modalBackdrop').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalBackdrop')) hideModal();
+});
+document.getElementById('modalConfirm').addEventListener('click', () => {
+  if (modalCallback) modalCallback();
+  hideModal();
+});
+
+// ── UI ──────────────────────────────────────────────
+function updateBar() {
+  const total = state.tasks.length;
+  const done = state.tasks.filter(t => t.done).length;
+  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  document.getElementById('doneCount').textContent = done;
+  document.getElementById('totalCount').textContent = total;
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statLeft').textContent = total - done;
+  document.getElementById('statPct').textContent = total === 0 ? '—' : pct + '%';
+
+  const fill = document.getElementById('barFill');
+  const badge = document.getElementById('percentBadge');
+  fill.style.width = pct + '%';
+  badge.textContent = pct + '%';
+  fill.classList.toggle('has-progress', done > 0);
+  document.getElementById('btnUndo').disabled = undoStack.length === 0;
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  list.innerHTML = '';
+  const pending = state.tasks.filter(t => !t.done);
+  const done = state.tasks.filter(t => t.done);
+
+  if (state.tasks.length === 0) {
+    list.innerHTML = `<li class="empty-state"><div class="icon">📋</div>タスクを追加して<br>積み重ねを始めましょう</li>`;
+    return;
+  }
+  if (pending.length === 0) {
+    list.innerHTML = `<li class="empty-state"><div class="icon">🎉</div>すべてのタスクが完了しました！<br><span style="font-size:12px;color:var(--done)">完了済み ${done.length} タスク</span></li>`;
+    return;
+  }
+  pending.forEach(task => {
+    const li = document.createElement('li');
+    li.className = 'task-item';
+    li.innerHTML = `
+      <input type="checkbox" class="task-check" data-id="${task.id}">
+      <input type="text" class="task-name" value="${escHtml(task.name)}" placeholder="タスク名..." data-id="${task.id}" maxlength="100">
+      <button class="btn-delete" data-id="${task.id}" title="削除">✕</button>
+    `;
+    list.appendChild(li);
+  });
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function addTask() {
+  const task = { id: genId(), name: '', done: false };
+  state.tasks.push(task);
+  save();
+  renderTasks();
+  updateBar();
+  const inputs = document.querySelectorAll('.task-name');
+  const last = inputs[inputs.length - 1];
+  if (last) { last.focus(); last.select(); }
+}
+
+// ── Events ──────────────────────────────────────────
+document.getElementById('taskList').addEventListener('change', e => {
+  if (e.target.classList.contains('task-check')) {
+    const id = e.target.dataset.id;
+    const task = state.tasks.find(t => t.id === id);
+    if (task) {
+      const prevDone = task.done;
+      task.done = e.target.checked;
+      if (task.done && !prevDone) undoStack.push({ id, prevDone: false });
+      else if (!task.done && prevDone) undoStack = undoStack.filter(u => u.id !== id);
+      save(); renderTasks(); updateBar();
+    }
+  }
+});
+
+document.getElementById('taskList').addEventListener('input', e => {
+  if (e.target.classList.contains('task-name')) {
+    const id = e.target.dataset.id;
+    const task = state.tasks.find(t => t.id === id);
+    if (task) { task.name = e.target.value; save(); }
+  }
+});
+
+document.getElementById('taskList').addEventListener('click', e => {
+  if (e.target.classList.contains('btn-delete')) {
+    const id = e.target.dataset.id;
+    state.tasks = state.tasks.filter(t => t.id !== id);
+    undoStack = undoStack.filter(u => u.id !== id);
+    save(); renderTasks(); updateBar();
+  }
+});
+
+document.getElementById('taskList').addEventListener('keydown', e => {
+  if (e.target.classList.contains('task-name') && e.key === 'Enter') addTask();
+});
+
+document.getElementById('btnAdd').addEventListener('click', addTask);
+
+document.getElementById('skillTitle').addEventListener('input', e => {
+  state.title = e.target.value;
+  save();
+});
+
+// ── Undo ──────────────────────────────────────────
+document.getElementById('btnUndo').addEventListener('click', () => {
+  if (undoStack.length === 0) return;
+  const last = undoStack[undoStack.length - 1];
+  const task = state.tasks.find(t => t.id === last.id);
+  const taskName = task ? `「${task.name || 'タスク'}」` : 'タスク';
+  showModal({
+    icon: '↩', title: '一つ戻しますか？',
+    desc: `${taskName} の完了を取り消します。`,
+    confirmLabel: '取り消す', confirmClass: 'amber',
+    onConfirm: () => {
+      const entry = undoStack.pop();
+      const t = state.tasks.find(t => t.id === entry.id);
+      if (t) t.done = entry.prevDone;
+      save(); renderTasks(); updateBar();
+    }
+  });
+});
+
+// ── Reset ──────────────────────────────────────────
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (state.tasks.length === 0) return;
+  showModal({
+    icon: '↺', title: 'リセットしますか？',
+    desc: `タスクをすべて削除します（${state.tasks.length} 件）。この操作は元に戻せません。`,
+    confirmLabel: 'リセットする', confirmClass: 'red',
+    onConfirm: () => {
+      state.tasks = []; undoStack = [];
+      save(); renderTasks(); updateBar();
+    }
+  });
+});
+
+// ── Init ──────────────────────────────────────────
+startSync();
+</script>
+</body>
+</html>
